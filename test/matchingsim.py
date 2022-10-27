@@ -218,6 +218,8 @@ class MatchingNetworkLibrary():
         if dut:
             self.components.append(MatchingComponent(dut, CompType.TRUESERIES, 'antenna'))
 
+        network_a = None
+        network_b = None
         combs = combinations(self.components, 2)
         for components in combs:
             network_a = components[0].network
