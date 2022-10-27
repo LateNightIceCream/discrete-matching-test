@@ -8,9 +8,7 @@ The directory structure is as follows:
 - `series/` contains all measurements that will be used in series configuration
 - `shunt/` contains all measurements that will be used in shunt configuration
 - each of these directories should have subdirectories with the relevant `s2p` files
-  - the name of these directories does not matter. however, inside each directory every file has to have the same frequency data (i.e. should be from one series of measurements)
-    - if they have different frequencies, put them in different folders
-  - the name **does matter** for the situation below
+  - the name does not matter **except** for the situation below
 - **if you want to use a series measurement in shunt configuration you will have to prefix the measurement subdirectory inside the shunt folder with 'series'**
   - example:
     - components/
