@@ -61,14 +61,14 @@ class MyEvaluator(Evaluator):
 
 def plot_results(final_res, results):
 
-    figure(0)
     (i, network, variation) = final_res
     network._plot_s_db(title='best')
 
-    figure(1)
+    save_all_figs('./plots_best', format=['pdf'])
+
     for result in results:
         (i, network, variation) = data
-        network.plot_s_db()
+        network.plot_s_db(label=str(i))
 
     save_all_figs('./plots', format=['pdf'])
 
