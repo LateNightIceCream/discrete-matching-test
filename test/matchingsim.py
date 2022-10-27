@@ -50,6 +50,7 @@ class Evaluator():
         logging.info(self.get_result_str(data))
         logging.info('===================')
 
+
 class MatchingSimulationManager():
     def __init__(self, dut, evaluator, network_description):
         self.network_library = MatchingNetworkLibrary()
@@ -78,9 +79,11 @@ class MatchingSimulationManager():
 
         return (i, result_network, variation)
 
+
     def simulate(self):
         i = 0
         simulation_result = None
+        all_feasible_results = []
         for (network, variation) in self.network_library:
             #network = circuit.network # BOTTLENECK!
             data = (i, network, variation)
@@ -89,57 +92,13 @@ class MatchingSimulationManager():
             if ev_result != None:
                 self.evaluator.print_result(ev_result)
                 simulation_result = ev_result
+                all_feasible_results.append(simulation_result)
 
             if i % 100 == 0:
                 logging.info('progress: ' + str(i))
             i += 1
 
-        return simulation_result
-
-
-    @staticmethod
-    def sim_thread_multi(i, circuit, variation, dut):
-        #(i, circuit, variation) = data
-        network = circuit.network
-        result_network = network ** dut
-        return (i, result_network, variation)
-
-
-    # doesnt work (at least not faster)
-    def simulate_multi(self):
-        simulation_result = None
-
-        n_done = 0
-        with concurrent.futures.ProcessPoolExecutor(max_workers = 3) as executor:
-            futures_notdone = set()
-            futures_done = set()
-            maxf = 10
-            i = 0
-
-            for (circuit, variation) in self.network_library:
-                try:
-                    futures_notdone.add(executor.submit(self.sim_thread_multi, i, circuit, variation, self.dut))
-                except:
-                    print("executor submit problemo!!")
-
-                if len(futures_notdone) >= maxf:
-                    done, futures_notdone = concurrent.futures.wait(futures_notdone, return_when = concurrent.futures.FIRST_COMPLETED)
-                    futures_done.update(done)
-
-                if len(futures_done) >= 1:
-                    while futures_done:
-                        result = futures_done.pop().result()
-                        ev_result = self.evaluator.evaluate(result)
-                        if ev_result != None:
-                            self.evaluator.print_result(ev_result)
-                            simulation_result = ev_result
-                        n_done += 1
-                    if n_done % 100 == 0:
-                        logging.info('progress: ' + str(n_done))
-
-                i += 1
-
-        return simulation_result
+        return (simulation_result, all_feasible_results)
 
 
 class ComponentPoolEntry():
@@ -254,14 +213,7 @@ class MatchingNetworkLibrary():
 
     def _make_frequencies_common(self, dut = None):
         # little inefficient, was better with NetworkSets but it's ok.
-        #comb = combinations(self.components, 2)
-
         common_freq = None
-        #for components in comb:
-        #    common_freq = get_common_frequency(components[0].network, components[1].network)
-        #    for component in components:
-        #        component.network.interpolate_self(common_freq)
-
         # inject dut (hacky way)
         if dut:
             self.components.append(MatchingComponent(dut, CompType.TRUESERIES, 'antenna'))
@@ -281,9 +233,6 @@ class MatchingNetworkLibrary():
             (components[0].network, components[1].network) = rf.network.overlap(large_network, small_network)
 
         self.frequency = network_b.frequency # hack! TODO: figure out right network network_b or network_a to assign to self.frequency dynamically
-        #print('----------')
-        #print(self.frequency)
-        #print(network_b.frequency)
         self.components.pop()
 
 
@@ -324,24 +273,24 @@ class MatchingNetworkLibrary():
     # alternative to _build_circuit() because circuit.network is slow
     def _build_network(self, variation):
         short = self.line.short()
-        #input = rf.Circuit.Port(self.frequency, 'Port 1')
-        #output = rf.Circuit.Port(self.frequency, 'Port 2')
         resulting_network = None
         started = False
+        # just hacked rn TODO: clean it up
         for component in variation:
             current_network = self.component_pool.draw_network(component)
             if not started:
+
                 if component.needs_ground():
                     resulting_network = self.line.shunt(current_network ** self.line.short())
                 else:
                     resulting_network = current_network
                 started = True
-                continue
 
-            if component.needs_ground():
-                resulting_network = resulting_network ** self.line.shunt(current_network ** self.line.short()) # creates a tee where one port goes to ground
             else:
-                resulting_network = resulting_network ** current_network
+                if component.needs_ground():
+                    resulting_network = resulting_network ** self.line.shunt(current_network ** self.line.short()) # creates a tee where one port goes to ground
+                else:
+                    resulting_network = resulting_network ** current_network
 
         return resulting_network
 
@@ -450,19 +399,3 @@ def _get_comp_type_from_dir(dir):
         if end_dir.startswith('series'):
             type = CompType.FALSESHUNT
     return type
-
-
-''' deprecated
-def get_common_frequency(network_a, network_b):
-    small_network = None
-    large_network = None
-
-    if network_a.frequency.npoints >= network_b.frequency.npoints:
-        large_network = network_a
-        small_network = network_b
-    else:
-        large_network = network_b
-        small_network = network_a
-
-    return small_network.frequency.overlap(large_network.frequency)
-'''

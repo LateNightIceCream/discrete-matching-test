@@ -86,19 +86,9 @@ def main():
 
     simManager = MatchingSimulationManager(antenna, evaluator, network_description)
 
-    #i = 0
-    '''
-    for circ in simManager.network_library:
-        print(i)
-        i += 1
-    '''
-
     start = time.time()
-    #final_result = simManager.simulate()
-    final_result = simManager.simulate()
+    (final_result, feasible_results) = simManager.simulate()
     end = time.time()
-    print(end-start)
-
 
     with open(r'test.csv', 'w') as f:
         writer = csv.writer(f)
@@ -115,40 +105,6 @@ def main():
     (i, network, variation) = final_result
     network.plot_s_db()
     save_all_figs('./plots', format=['pdf'])
-
-    '''
-
-    start = time.time()
-    final_result = simManager.simulate()
-    end = time.time()
-
-    '''
-
-    '''
-    circ = None
-    vari = None
-    i = 0
-    for (circuit, variation) in mcl:
-        i += 1
-        if i == 2004:
-            circ = circuit
-            vari = variation
-            break
-
-
-    matchnet = circ.network
-
-    (antenna_new, matchnet_new) = rf.network.overlap(antenna, matchnet) # TODO: USE THIS IN _make_frequencies_common() !!
-
-    q = matchnet_new ** antenna_new
-
-    for comp in variation:
-        print(comp.name)
-
-    #q.plot_graph(network_labels = True, port_labels = True)
-    q.plot_s_db()
-    save_all_figs('./plots', format=['pdf'])
-    '''
 
 
 if __name__ == '__main__':
