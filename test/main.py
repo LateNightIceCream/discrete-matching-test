@@ -8,6 +8,7 @@ logging.basicConfig(level=os.environ.get("LOGLEVEL", "INFO"))
 import time
 import csv
 from matchingsim import *
+import winsound
 
 short = rf.data.wr2p2_short
 rf.stylely()
@@ -58,6 +59,18 @@ class MyEvaluator(Evaluator):
             out += (component.name) + '\n'
         return out
 
+def plot_results(final_res, results):
+
+    figure(0)
+    (i, network, variation) = final_res
+    network._plot_s_db(title='best')
+
+    figure(1)
+    for result in results:
+        (i, network, variation) = data
+        network.plot_s_db()
+
+    save_all_figs('./plots', format=['pdf'])
 
 def print_simulation_result(data, time):
     secs = time
@@ -77,7 +90,6 @@ def print_simulation_result(data, time):
 
 
 def main():
-
     antenna = rf.Network('antenna/20221027-ellio-raw.s1p')
 
     evaluator = MyEvaluator()
@@ -103,9 +115,10 @@ def main():
 
     print_simulation_result(final_result, end - start)
     (i, network, variation) = final_result
-    network.plot_s_db()
-    save_all_figs('./plots', format=['pdf'])
 
+    plot_results(final_result, feasible_results)
+
+    winsound.PlaySound("SystemExclamation", winsound.SND_ALIAS)
 
 if __name__ == '__main__':
     main()
