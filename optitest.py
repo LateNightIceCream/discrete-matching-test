@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 from enum import Enum
 from itertools import islice, product, zip_longest, combinations, repeat
 import math
+from multiprocessing import Pool
 
 class CompKey(Enum):
     SERIES = 1
@@ -94,7 +95,6 @@ def matching_network(variation):
         return net ** antenna
     return network
 
-
 def get_starting_values(variation):
     starting_vals = ()
     for comp in variation:
@@ -118,6 +118,7 @@ def objective_function(matching_net):
         max_db_2 = max(rf.mathFunctions.complex_2_db(_ntw[range2].s11.s))[0][0]
         return -1 * max_db_1 * max_db_2
     return obj_fun
+
 
 def objective_function_2(variation):
     def obj_fun(*args):
@@ -155,7 +156,7 @@ def objective_function_3(variation):
         min_db_1 = min(rf.mathFunctions.complex_2_db(_ntw[range1].s11.s))[0][0]
         min_db_2 = min(rf.mathFunctions.complex_2_db(_ntw[range2].s11.s))[0][0]
 
-        return max_db_2 + math.sqrt(max_db_1)
+        return max_db_2 + max_db_1
 
     return obj_fun_loc
 
@@ -176,15 +177,21 @@ def sim_thread(variation):
 
 
 def simulate(variations):
-    for variation in variations:
-        result = sim_thread(variation)
+    p = Pool()
+    result = p.map(sim_thread, variations)
+    for res in result:
+        print(res)
+    #
+    #for variation in variations:
+    #    result = sim_thread(variation)
 
-network_description = [CompKey.SERIES, CompKey.SHUNT, CompKey.SERIES]
-variation_template = parse_network_template_description(network_description)
-variations = _specific_order_cartesian(variation_template)
-simulate(variations)
-lte.plot_s_db(lw=2)
-save_all_figs('./plots', format=['pdf'])
+if __name__ == '__main__':
+    network_description = [CompKey.SERIES, CompKey.SHUNT, CompKey.SERIES]
+    variation_template = parse_network_template_description(network_description)
+    variations = _specific_order_cartesian(variation_template)
+    simulate(variations)
+    lte.plot_s_db(lw=2)
+    save_all_figs('./plots', format=['pdf'])
 
 
 '''
