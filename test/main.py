@@ -88,7 +88,6 @@ def print_simulation_result(data, time):
 
     logging.info('===================')
 
-
 def main():
     antenna = rf.Network('antenna/20221027-ellio-raw.s1p')
 
