@@ -6,6 +6,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from enum import Enum
 from itertools import islice, product, zip_longest, combinations, repeat
+import math
 
 class CompKey(Enum):
     SERIES = 1
@@ -154,7 +155,7 @@ def objective_function_3(variation):
         min_db_1 = min(rf.mathFunctions.complex_2_db(_ntw[range1].s11.s))[0][0]
         min_db_2 = min(rf.mathFunctions.complex_2_db(_ntw[range2].s11.s))[0][0]
 
-        return max_db_2 + 0.3 * max_db_1
+        return max_db_2 + math.sqrt(max_db_1)
 
     return obj_fun_loc
 
