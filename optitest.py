@@ -8,6 +8,7 @@ from enum import Enum
 from itertools import islice, product, zip_longest, combinations, repeat
 import math
 from multiprocessing import Pool
+import time
 
 class CompKey(Enum):
     SERIES = 1
@@ -19,7 +20,7 @@ class CompType(Enum):
 
 
 Z_0 = 50
-antenna = rf.Network('test/antenna/ellio-raw-dual.s1p')
+antenna = rf.Network('test/antenna/ellio-raw-22nH-shunt.s1p')
 lte = rf.Network('test/bp_LTE.s1p')
 
 # frequency band centered on the frequency of interest
@@ -38,10 +39,10 @@ class Component:
         self.factor = factor
 
 def parse_network_template_description(network_description):
-    cap_bounds = (0.1, 15)
-    cap_bounds_shunt = (0.001, 15)
-    ind_bounds = (1, 15)
-    cap_initial = 0.6
+    cap_bounds = (1e-12, 10e3)
+    cap_bounds_shunt = (1e-12, 10e3)
+    ind_bounds = (1e-12, 10e3)
+    cap_initial = 1.5
     ind_initial = 1
     series_cap = Component(line.capacitor, cap_initial, cap_bounds, 1e-12)
     series_ind = Component(line.inductor, ind_initial, ind_bounds, 1e-9)
@@ -167,6 +168,7 @@ def sim_thread(variation):
     bound = get_bounds(variation)
     res1 = minimize(objective_function_3(variation), x0, bounds=bound)#, callback = printx)
     ntw1 = matching_net(*res1.x)
+    print(ntw1)
     print('------------')
     for comp in variation:
         print(comp.netfun)
@@ -186,45 +188,13 @@ def simulate(variations):
     #    result = sim_thread(variation)
 
 if __name__ == '__main__':
+    start_time = time.time()
     network_description = [CompKey.SERIES, CompKey.SHUNT, CompKey.SERIES]
     variation_template = parse_network_template_description(network_description)
     variations = _specific_order_cartesian(variation_template)
     simulate(variations)
     lte.plot_s_db(lw=2)
     save_all_figs('./plots', format=['pdf'])
+    end_time = time.time()
 
-
-'''
-# initial guess values
-L0 = 1 # nH
-C0 = 1 # pF
-L1 = 1 # nH
-C1 = 1 # pF
-x0 = (L0, C0, L1, C1)
-# bounds
-L_minmax = (1, 20) #nH
-C_minmax = (0, 15) # pF
-L1_minmax = (1, 20) #nH
-C1_minmax = (0, 15) # pF
-
-def objective_function_1(x, variation):
-    _ntw = matching_network_2(*x)
-    range1 = '791mhz-861mhz'
-    range2 = '1710mhz-1880mhz'
-
-    max_db_1 = max(rf.mathFunctions.complex_2_db(_ntw[range1].s11.s))[0][0]
-    max_db_2 = max(rf.mathFunctions.complex_2_db(_ntw[range2].s11.s))[0][0]
-
-    return -1 * max_db_1 * max_db_2
-    #return np.abs(_ntw[f_0_str].s).ravel()
-
-res1 = minimize(objective_function_1, x0, bounds=(L_minmax, C_minmax, L1_minmax, C1_minmax), callback = printx)
-
-ntw1 = matching_network(*res1.x)
-
-print(res1.x)
-
-ntw1.plot_s_db(lw=2, label='LC network 1')
-save_all_figs('./plots', format=['pdf'])
-
-'''
+    print('--- finished in %s seconds ---' % (str(end_time - start_time)))

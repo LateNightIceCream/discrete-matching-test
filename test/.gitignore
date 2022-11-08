@@ -2,3 +2,4 @@
 antenna/*
 *.csv
 *.pdf
+!antenna/ellio-raw-dual.s1p
