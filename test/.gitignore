@@ -3,3 +3,4 @@ antenna/*
 *.csv
 *.pdf
 !antenna/ellio-raw-dual.s1p
+!antenna/ellio-raw-22nH-shunt.s1p
